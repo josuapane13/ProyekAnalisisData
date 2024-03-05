@@ -1,9 +1,9 @@
 # ProyekAnalisisData
 ## https://www.dicoding.com/academies/555/tutorials/31230
 
-## Nama      : Josua Pane
-## Email     : panejosua@gmail.com
-## Username  : josuapane13
+### Nama      : Josua Pane
+### Email     : panejosua@gmail.com
+### Username  : josuapane13
 
 ## Setup environment
 conda create --name main-ds
