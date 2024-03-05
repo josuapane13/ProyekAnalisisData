@@ -2,7 +2,7 @@
 ## https://www.dicoding.com/academies/555/tutorials/31230
 
 
-Nama      : Josua Pane
+Nama      : Josua Pane\n
 Email     : panejosua@gmail.com
 Username  : josuapane13
 
