@@ -3,14 +3,14 @@ import altair as alt
 import streamlit as st
 
 day_df = pd.read_csv('https://raw.githubusercontent.com/josuapane13/ProyekAnalisisData/main/dataset/cleaned/day_df.csv')
+hour_df = pd.read_csv("https://raw.githubusercontent.com/josuapane13/ProyekAnalisisData/main/dataset/cleaned/hour_df.csv")
 
-def filter_data(selected_season, selected_holiday, selected_weather, selected_month):
-    return day_df[
-        (day_df['season'].isin(selected_season if selected_season else day_df['season'])) &
-        (day_df['holiday'] == selected_holiday) &
-        (day_df['weather'].isin(selected_weather if selected_weather else day_df['weather'])) &
-        (day_df['month'].isin(selected_month if selected_month else day_df['month']))
-    ]
+hour_df.sort_values(by="date", inplace=True)
+hour_df.reset_index(inplace=True)
+hour_df["date"] = pd.to_datetime(hour_df["date"])
+min_date = hour_df["date"].min()
+max_date = hour_df["date"].max()
+
 
 def usecase1():
     st.title('Pengguna rental sepeda berdasarkan musim')
@@ -28,39 +28,68 @@ def usecase1():
     ).interactive()
 
     st.altair_chart(bar_chart_musim, use_container_width=True)
-
-def usecase2():
-    st.title('Penggunaan Rental Sepeda Berdasarkan Temperatur')
-    scatter_plot = alt.Chart(day_df).mark_circle().encode(
-        x='temperature:Q',
-        y='total:Q',
-        color='season:N',
-        tooltip=['temperature', 'total']
-    ).interactive()
-
-    st.altair_chart(scatter_plot, use_container_width=True)
-
-def filter_data_usecase():
-    st.title('Filter Data Interaktif')
     
-    selected_season = st.multiselect('Pilih Musim', day_df['season'].unique())
-    selected_holiday = st.selectbox('Pilih Hari Libur', [True, False])
-    selected_weather = st.multiselect('Pilih Cuaca', day_df['weather'].unique())
-    selected_month = st.multiselect('Pilih Bulan', day_df['month'].unique())
-    filtered_data_result = filter_data(selected_season, selected_holiday, selected_weather, selected_month)
+def usecase2():
+    st.subheader("Pilih Rentang Waktu")
+    start_date, end_date = st.date_input(
+        label='Rentang Waktu',min_value=min_date,
+        max_value=max_date,
+        value=[min_date, max_date]
+    )
+    main_hour_df = hour_df[(hour_df["date"] >= str(start_date)) & 
+        (hour_df["date"] <= str(end_date))]
+    main_day_df = day_df[(day_df["date"] >= str(start_date)) & 
+        (day_df["date"] <= str(end_date))]
+
+ 
+    chart_temperature_season = {
+        "mark": "point",
+        "encoding": {
+            "x": {
+                "field": "temperature",
+                "type": "quantitative",
+            },
+            "y": {
+                "field": "total",
+                "type": "quantitative",
+            },
+            "color": {"field": "season", "type": "nominal"},
+            "shape": {"field": "season", "type": "nominal"},
+        },
+    }
+    st.subheader("Penggunaan Rental Sepeda Berdasarkan Temperature")
+    main_hour_df['weather'] = main_hour_df['weather'].map({1: 'Clear', 2: 'Mist / Cloudy', 3: 'Light Snow / Light Rain', 4: 'Heavy Rain / Ice Pallets'})
+
+    temperature = f"{round(main_hour_df['temperature'].mean(), 2)}°C"
+    windspeed = f"{round(main_hour_df['windspeed'].mean(), 2)} km/h"
+    humidity = f"{round(main_hour_df['humidity'].mean(), 2)}%"
 
 
-    st.write('Data Setelah Difilter:')
-    st.write(filtered_data_result)
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Temperature", temperature)
+    col2.metric("Wind", windspeed)
+    col3.metric("Humidity", humidity)
 
 
-navigation = st.sidebar.radio("Navigation", ["Usecase 1", "Usecase 2", "Filter Data"])
+    st.subheader("Penggunaan Rental Sepeda Berdasarkan Temperature")
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.write("Penggunaan Rental Sepeda per Jam")
+        st.vega_lite_chart(main_hour_df, chart_temperature_season, theme="streamlit", use_container_width=True)
+    with col2:
+        st.write("Penggunaan Rental Sepeda per Hari")
+        st.vega_lite_chart(main_day_df, chart_temperature_season, theme="streamlit", use_container_width=True)
+    st.subheader("Penggunaan Rental Sepeda Berdasarkan Cuaca")
+
+    st.write("Penggunaan Rental Sepeda Berdasarkan Cuaca")
+    st.bar_chart(main_hour_df, x='weather', y='total', use_container_width=True)
+    
+navigation = st.sidebar.radio("Navigation", ["Usecase 1", "Usecase 2"])
 
 if navigation == "Usecase 1":
     usecase1()
 elif navigation == "Usecase 2":
     usecase2()
-elif navigation == "Filter Data":
-    filter_data_usecase()
 
 st.sidebar.text('Copyright (c) Josua Pane 2024')
